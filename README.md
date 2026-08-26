@@ -20,6 +20,27 @@ npm run build
 npm start
 ```
 
+## Docker VPS
+
+Crear `.env` en el VPS usando `.env.vps.example` como referencia. No commitear `.env`.
+
+Comandos principales:
+
+```bash
+docker compose up -d --build postgres
+docker compose up -d --build api
+docker compose exec api npm run prisma:deploy
+docker compose logs -f api
+```
+
+La API queda publicada en el puerto definido por `API_HOST_PORT`, por defecto `3020`:
+
+```http
+http://IP_DEL_VPS:3020/health
+```
+
+PostgreSQL no se expone al host; queda accesible solo dentro de Docker como `postgres:5432`.
+
 ## Variables de entorno
 
 Copiar `.env.example` a `.env` si se necesita cambiar el puerto.

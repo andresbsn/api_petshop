@@ -3,6 +3,7 @@ dist/
 .env
 .env.*
 !.env.example
+!.env.vps.example
 certs/
 .arca-cache/
 *.key

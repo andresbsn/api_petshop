@@ -1,0 +1,11 @@
+node_modules
+dist
+.git
+.env
+.env.*
+!.env.example
+certs
+.arca-cache
+npm-debug.log
+Dockerfile
+docker-compose*.yml

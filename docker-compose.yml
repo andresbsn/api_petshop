@@ -1,0 +1,60 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: api_petshop_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-api_petshop}
+      POSTGRES_USER: ${POSTGRES_USER:-api_petshop}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_SCHEMA: ${POSTGRES_SCHEMA:-api_petshop}
+    volumes:
+      - api_petshop_postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres/init-schema.sh:/docker-entrypoint-initdb.d/init-schema.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-api_petshop} -d ${POSTGRES_DB:-api_petshop}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - api_petshop_net
+
+  api:
+    build: .
+    container_name: api_petshop_api
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      API_KEY: ${API_KEY}
+      ARCA_EMISION_HABILITADA: ${ARCA_EMISION_HABILITADA:-false}
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: ${POSTGRES_DB:-api_petshop}
+      POSTGRES_USER: ${POSTGRES_USER:-api_petshop}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_SCHEMA: ${POSTGRES_SCHEMA:-api_petshop}
+      AFIP_PRODUCTION: ${AFIP_PRODUCTION:-false}
+      AFIP_CUIT: ${AFIP_CUIT}
+      AFIP_CERT: ${AFIP_CERT}
+      AFIP_KEY: ${AFIP_KEY}
+      AFIP_PTO_VTA: ${AFIP_PTO_VTA}
+      AFIP_CBTE_TIPO: ${AFIP_CBTE_TIPO}
+    volumes:
+      - ./certs:/app/certs:ro
+      - api_petshop_arca_cache:/app/.arca-cache
+    ports:
+      - "${API_HOST_PORT:-3020}:3000"
+    networks:
+      - api_petshop_net
+
+volumes:
+  api_petshop_postgres_data:
+  api_petshop_arca_cache:
+
+networks:
+  api_petshop_net:
+    name: api_petshop_net
