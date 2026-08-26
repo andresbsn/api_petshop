@@ -1,0 +1,97 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Empresa {
+  id             String    @id @default(cuid())
+  codigo         String    @unique
+  nombre         String
+  razonSocial    String?
+  cuit           String?
+  condicionIva   String?
+  ambienteArca   String?
+  puntoVenta     Int?
+  activo         Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  facturas       Factura[]
+
+  @@map("empresas")
+}
+
+model Factura {
+  id                     String        @id @default(cuid())
+  empresaId              String
+  origen                 String
+  idVenta                String
+  fecha                  String
+  estado                 String        @default("SIMULADA")
+  idempotencyKey         String        @unique
+  codigoTipoComprobante  Int
+  tipoComprobante        String
+  puntoVenta             Int
+  numeroComprobante      Int
+  codigoTipoDocumento    Int
+  numeroDocumento        String
+  importeGravado         Decimal       @db.Decimal(14, 2)
+  importeIva             Decimal       @db.Decimal(14, 2)
+  importeTotal           Decimal       @db.Decimal(14, 2)
+  cae                    String
+  fechaVencimientoCae    String
+  resultado              String
+  payloadOriginal        Json
+  responseJson           Json
+  createdAt              DateTime      @default(now())
+  updatedAt              DateTime      @updatedAt
+  empresa                Empresa       @relation(fields: [empresaId], references: [id])
+  items                  FacturaItem[]
+  arcaRequests           ArcaRequest[]
+  arcaResponses          ArcaResponse[]
+
+  @@unique([empresaId, origen, idVenta])
+  @@index([origen, idVenta])
+  @@map("facturas")
+}
+
+model FacturaItem {
+  id                  String   @id @default(cuid())
+  facturaId           String
+  renglon             Int
+  idProducto          String?
+  codigo              String?
+  descripcion         String
+  cantidad            Decimal  @db.Decimal(14, 3)
+  precioUnitario      Decimal  @db.Decimal(14, 2)
+  alicuotaIva         Decimal? @db.Decimal(5, 2)
+  importeTotal        Decimal  @db.Decimal(14, 2)
+  factura             Factura  @relation(fields: [facturaId], references: [id], onDelete: Cascade)
+
+  @@map("factura_items")
+}
+
+model ArcaRequest {
+  id         String   @id @default(cuid())
+  facturaId  String
+  servicio   String
+  payload    Json
+  createdAt  DateTime @default(now())
+  factura    Factura  @relation(fields: [facturaId], references: [id], onDelete: Cascade)
+
+  @@map("arca_requests")
+}
+
+model ArcaResponse {
+  id         String   @id @default(cuid())
+  facturaId  String
+  servicio   String
+  payload    Json
+  createdAt  DateTime @default(now())
+  factura    Factura  @relation(fields: [facturaId], references: [id], onDelete: Cascade)
+
+  @@map("arca_responses")
+}

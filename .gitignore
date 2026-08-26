@@ -1,0 +1,11 @@
+node_modules/
+dist/
+.env
+.env.*
+!.env.example
+certs/
+.arca-cache/
+*.key
+*.crt
+*.pem
+*.p12

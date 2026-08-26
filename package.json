@@ -1,0 +1,30 @@
+{
+  "name": "api-petshop-facturacion",
+  "version": "0.1.0",
+  "private": true,
+  "description": "API REST para integrar ventas de Clarion con facturacion electronica ARCA.",
+  "main": "dist/server.js",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:migrate:env": "node scripts/prisma-from-env.js migrate dev",
+    "arca:test-connection": "tsx scripts/arca-connection-test.ts",
+    "arca:fiscal-status": "tsx scripts/arca-fiscal-status.ts",
+    "start": "node dist/server.js"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.12.0",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/node": "^22.5.0",
+    "prisma": "^6.12.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.5.4"
+  }
+}
