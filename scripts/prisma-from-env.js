@@ -3,22 +3,18 @@ const { spawnSync } = require("child_process");
 const dotenv = require("dotenv");
 
 const envFile = ".env";
+const parsed = fs.existsSync(envFile) ? dotenv.parse(fs.readFileSync(envFile)) : {};
+const env = { ...process.env, ...parsed };
 
-if (!fs.existsSync(envFile)) {
-  console.error("No existe .env");
-  process.exit(1);
-}
-
-const parsed = dotenv.parse(fs.readFileSync(envFile));
-const host = parsed.POSTGRES_HOST || "localhost";
-const port = parsed.POSTGRES_PORT || "5432";
-const database = parsed.POSTGRES_DB;
-const user = parsed.POSTGRES_USER;
-const password = parsed.POSTGRES_PASSWORD;
-const schema = parsed.POSTGRES_SCHEMA || "public";
+const host = env.POSTGRES_HOST || "localhost";
+const port = env.POSTGRES_PORT || "5432";
+const database = env.POSTGRES_DB;
+const user = env.POSTGRES_USER;
+const password = env.POSTGRES_PASSWORD;
+const schema = env.POSTGRES_SCHEMA || "public";
 
 if (!database || !user || !password) {
-  console.error("Faltan POSTGRES_DB, POSTGRES_USER o POSTGRES_PASSWORD en .env");
+  console.error("Faltan POSTGRES_DB, POSTGRES_USER o POSTGRES_PASSWORD");
   process.exit(1);
 }
 
@@ -34,7 +30,7 @@ const result = spawnSync("npx", ["prisma", ...args], {
   stdio: "inherit",
   shell: process.platform === "win32",
   env: {
-    ...process.env,
+    ...env,
     DATABASE_URL: databaseUrl
   }
 });
