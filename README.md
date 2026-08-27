@@ -108,10 +108,13 @@ La respuesta de emision incluye un bloque `clarion` con campos planos para guard
     "CodigoConcepto": 1,
     "Resultado": "A",
     "CAE": "...",
-    "FechaVencimientoCAE": "2026-09-04"
+    "FechaVencimientoCAE": "2026-09-04",
+    "QRUrl": "https://www.afip.gob.ar/fe/qr/?p=..."
   }
 }
 ```
+
+`QRUrl` es la URL fiscal que debe convertirse a imagen QR para imprimir en ticket termico.
 
 ## Seguridad
 

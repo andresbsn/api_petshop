@@ -195,7 +195,8 @@ Cuando la emision homologacion es autorizada, la API devuelve el bloque `comprob
     "importeTotal": 5400,
     "cae": "86340803813797",
     "fechaVencimientoCae": "2026-09-04",
-    "resultado": "A"
+    "resultado": "A",
+    "qrUrl": "https://www.afip.gob.ar/fe/qr/?p=..."
   },
   "clarion": {
     "ID_NotaP": 11458,
@@ -217,7 +218,8 @@ Cuando la emision homologacion es autorizada, la API devuelve el bloque `comprob
     "CodigoConcepto": 1,
     "Resultado": "A",
     "CAE": "86340803813797",
-    "FechaVencimientoCAE": "2026-09-04"
+    "FechaVencimientoCAE": "2026-09-04",
+    "QRUrl": "https://www.afip.gob.ar/fe/qr/?p=..."
   },
   "idempotente": false
 }
@@ -246,6 +248,7 @@ Mapeo sugerido a `Comprobantes`:
 | `Resultado` | `Resultado` |
 | `CAE` | `CAE` |
 | `FechaVencimientoCAE` | `FechaVencimientoCAE` |
+| `QRUrl` | URL fiscal para generar/imprimir QR |
 | `ID_NotaP` | referencia a `notaPedido.idNotaP` o `Combtes_Items.ID_NotaP` |
 
 ## Respuesta idempotente

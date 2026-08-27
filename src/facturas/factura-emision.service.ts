@@ -1,5 +1,6 @@
 import { Prisma } from "@prisma/client";
 import { loadArcaConfig } from "../arca/arca.config";
+import { buildArcaQrUrl } from "../arca/qr";
 import { getWsaaLoginTicket } from "../arca/wsaa";
 import {
   buildWsfeAuth,
@@ -42,13 +43,41 @@ async function findFacturaByKey(idempotencyKey: string) {
 
 function buildClarionResponseFromFactura(factura: NonNullable<Awaited<ReturnType<typeof findFacturaByKey>>>) {
   const response = factura.responseJson as Record<string, unknown>;
+  const existingQrUrl = (response.comprobante as { qrUrl?: string } | undefined)?.qrUrl;
+  const qrUrl = existingQrUrl ?? (process.env.AFIP_CUIT ? buildArcaQrUrl({
+    fecha: factura.fecha,
+    cuit: process.env.AFIP_CUIT,
+    puntoVenta: factura.puntoVenta,
+    tipoComprobante: factura.codigoTipoComprobante,
+    numeroComprobante: factura.numeroComprobante,
+    importeTotal: Number(factura.importeTotal),
+    moneda: "PES",
+    cotizacion: 1,
+    tipoDocumentoReceptor: factura.codigoTipoDocumento,
+    numeroDocumentoReceptor: factura.numeroDocumento,
+    cae: factura.cae
+  }) : undefined);
 
   if (response.clarion) {
-    return response;
+    return {
+      ...response,
+      comprobante: {
+        ...(response.comprobante as Record<string, unknown> | undefined),
+        qrUrl
+      },
+      clarion: {
+        ...(response.clarion as Record<string, unknown>),
+        QRUrl: qrUrl
+      }
+    };
   }
 
   return {
     ...response,
+    comprobante: {
+      ...(response.comprobante as Record<string, unknown> | undefined),
+      qrUrl
+    },
     clarion: {
       ID_NotaP: factura.idVenta,
       CodigoTipoComprobante: factura.codigoTipoComprobante,
@@ -69,7 +98,8 @@ function buildClarionResponseFromFactura(factura: NonNullable<Awaited<ReturnType
       CodigoConcepto: 1,
       Resultado: factura.resultado,
       CAE: factura.cae,
-      FechaVencimientoCAE: factura.fechaVencimientoCae
+      FechaVencimientoCAE: factura.fechaVencimientoCae,
+      QRUrl: qrUrl
     }
   };
 }
@@ -138,6 +168,20 @@ export async function emitirFacturaHomologacion(payload: FacturaRequest) {
     };
   }
 
+  const qrUrl = buildArcaQrUrl({
+    fecha: preview.normalizado.fecha,
+    cuit: config.cuit,
+    puntoVenta: preview.normalizado.puntoVenta,
+    tipoComprobante: payload.comprobante.codigoTipoComprobante,
+    numeroComprobante: caeResponse.comprobanteDesde ?? numeroComprobante,
+    importeTotal: preview.normalizado.importes.importeTotal,
+    moneda: "PES",
+    cotizacion: 1,
+    tipoDocumentoReceptor: payload.cliente.tipoDocumento,
+    numeroDocumentoReceptor: payload.cliente.numeroDocumento,
+    cae: caeResponse.cae
+  });
+
   const responseJson = {
     success: true,
     idVenta: payload.idVenta,
@@ -154,7 +198,8 @@ export async function emitirFacturaHomologacion(payload: FacturaRequest) {
       importeTotal: preview.normalizado.importes.importeTotal,
       cae: caeResponse.cae,
       fechaVencimientoCae: normalizeAfipDate(caeResponse.caeFechaVencimiento),
-      resultado: caeResponse.resultado
+      resultado: caeResponse.resultado,
+      qrUrl
     },
     clarion: {
       ID_NotaP: payload.idVenta,
@@ -176,7 +221,8 @@ export async function emitirFacturaHomologacion(payload: FacturaRequest) {
       CodigoConcepto: 1,
       Resultado: caeResponse.resultado,
       CAE: caeResponse.cae,
-      FechaVencimientoCAE: normalizeAfipDate(caeResponse.caeFechaVencimiento)
+      FechaVencimientoCAE: normalizeAfipDate(caeResponse.caeFechaVencimiento),
+      QRUrl: qrUrl
     },
     observaciones: caeResponse.observaciones
   };
