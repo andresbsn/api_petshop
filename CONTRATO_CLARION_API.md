@@ -251,6 +251,22 @@ Mapeo sugerido a `Comprobantes`:
 | `QRUrl` | URL fiscal para generar/imprimir QR |
 | `ID_NotaP` | referencia a `notaPedido.idNotaP` o `Combtes_Items.ID_NotaP` |
 
+## Imagen PNG del QR
+
+La API tambien expone el QR fiscal como imagen PNG:
+
+```http
+GET /api/v1/facturas/PETSHOP_CLARION/11458/qr.png?empresa=PETSHOP&apiKey=TU_API_KEY
+```
+
+Respuesta exitosa:
+
+```http
+Content-Type: image/png
+```
+
+Clarion puede descargar este recurso y usarlo como imagen para la impresion del ticket.
+
 ## Respuesta idempotente
 
 Si la venta ya fue registrada, la API devuelve `200` con el mismo comprobante y:

@@ -7,6 +7,7 @@ import {
 } from "./facturas/factura.service";
 import { crearPreviewFactura } from "./facturas/factura-preview.service";
 import { emitirFacturaHomologacion, FacturaEmisionError } from "./facturas/factura-emision.service";
+import { generarQrFacturaPng } from "./facturas/factura-qr.service";
 import { requireApiKey } from "./middleware/api-key";
 
 function maskSensitiveBody(body: unknown) {
@@ -67,6 +68,26 @@ export function createApp() {
       ...factura,
       idempotente: true
     });
+  });
+
+  app.get("/api/v1/facturas/:origen/:idVenta/qr.png", async (req: Request, res: Response) => {
+    const empresa = typeof req.query.empresa === "string" ? req.query.empresa : "PETSHOP";
+    const png = await generarQrFacturaPng({
+      empresa,
+      origen: req.params.origen,
+      idVenta: req.params.idVenta
+    });
+
+    if (!png) {
+      return res.status(404).json({
+        success: false,
+        error: "QR_NOT_FOUND"
+      });
+    }
+
+    res.setHeader("Content-Type", "image/png");
+    res.setHeader("Cache-Control", "private, max-age=86400");
+    return res.send(png);
   });
 
   app.post("/api/v1/facturas/preview", (req: Request, res: Response) => {

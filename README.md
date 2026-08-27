@@ -69,6 +69,7 @@ POST /api/v1/facturas
 POST /api/v1/facturas/preview
 POST /api/v1/facturas/emitir
 GET /api/v1/facturas/:origen/:idVenta?empresa=PETSHOP
+GET /api/v1/facturas/:origen/:idVenta/qr.png?empresa=PETSHOP
 ```
 
 `POST /api/v1/facturas/preview` recibe el mismo JSON que `POST /api/v1/facturas`, normaliza importes con IVA incluido y devuelve el payload fiscal que se enviaria a AFIP/ARCA. No emite comprobantes.
@@ -115,6 +116,14 @@ La respuesta de emision incluye un bloque `clarion` con campos planos para guard
 ```
 
 `QRUrl` es la URL fiscal que debe convertirse a imagen QR para imprimir en ticket termico.
+
+Tambien se puede descargar el QR fiscal como PNG:
+
+```http
+GET /api/v1/facturas/PETSHOP_CLARION/11458/qr.png?empresa=PETSHOP&apiKey=TU_API_KEY
+```
+
+Este endpoint devuelve `Content-Type: image/png` para que Clarion descargue el archivo y lo use en impresion.
 
 ## Seguridad
 
