@@ -157,7 +157,8 @@ export function createApp() {
         return res.status(error.statusCode).json({
           success: false,
           error: error.errorCode,
-          message: error.message
+          message: error.message,
+          details: error.details
         });
       }
 

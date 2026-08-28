@@ -110,6 +110,20 @@ export function crearPreviewFactura(payload: FacturaRequest, options?: { numeroC
     const importeIva = round2(importeTotal - importeNeto);
     const precioUnitarioNeto = round2(item.precioUnitario / (1 + alicuotaIva / 100));
 
+    if (item.precioUnitario <= 0) {
+      errores.push({
+        path: `items.${index}.precioUnitario`,
+        message: "El precio unitario debe ser mayor a 0 para emitir."
+      });
+    }
+
+    if (item.importeTotal <= 0) {
+      errores.push({
+        path: `items.${index}.importeTotal`,
+        message: "El importe total del item debe ser mayor a 0 para emitir."
+      });
+    }
+
     if (!ivaAfipCode) {
       errores.push({
         path: `items.${index}.alicuotaIva`,
@@ -138,6 +152,13 @@ export function crearPreviewFactura(payload: FacturaRequest, options?: { numeroC
   const importeIva = round2(items.reduce((sum, item) => sum + item.importeIva, 0));
   const importeTotal = round2(payload.venta.total);
   const diferenciaTotal = round2(totalItems - importeTotal);
+
+  if (importeTotal <= 0) {
+    errores.push({
+      path: "venta.total",
+      message: "El total de la venta debe ser mayor a 0 para emitir."
+    });
+  }
 
   if (Math.abs(diferenciaTotal) > 0.01) {
     errores.push({

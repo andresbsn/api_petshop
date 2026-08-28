@@ -13,7 +13,12 @@ import { crearPreviewFactura } from "./factura-preview.service";
 import { FacturaRequest } from "./factura.schema";
 
 export class FacturaEmisionError extends Error {
-  constructor(public readonly statusCode: number, public readonly errorCode: string, message: string) {
+  constructor(
+    public readonly statusCode: number,
+    public readonly errorCode: string,
+    message: string,
+    public readonly details?: unknown
+  ) {
     super(message);
     this.name = "FacturaEmisionError";
   }
@@ -134,8 +139,36 @@ export async function emitirFacturaHomologacion(payload: FacturaRequest) {
 
   const previewInicial = crearPreviewFactura(payload);
 
+  console.log("POST /api/v1/facturas/emitir preview", {
+    success: previewInicial.success,
+    idVenta: previewInicial.idVenta,
+    puntoVenta: previewInicial.normalizado.puntoVenta,
+    codigoTipoComprobante: previewInicial.normalizado.codigoTipoComprobante,
+    fecha: previewInicial.normalizado.fecha,
+    importeNeto: previewInicial.normalizado.importes.importeNeto,
+    importeIva: previewInicial.normalizado.importes.importeIva,
+    importeTotal: previewInicial.normalizado.importes.importeTotal,
+    sumaItems: previewInicial.normalizado.importes.sumaItems,
+    items: previewInicial.normalizado.items.map((item) => ({
+      renglon: item.renglon,
+      cantidad: item.cantidad,
+      precioUnitarioConIva: item.precioUnitarioConIva,
+      importeTotal: item.importeTotal,
+      importeNeto: item.importeNeto,
+      importeIva: item.importeIva,
+      alicuotaIva: item.alicuotaIva
+    })),
+    errores: previewInicial.validaciones.errores,
+    advertencias: previewInicial.validaciones.advertencias
+  });
+
   if (!previewInicial.success) {
-    throw new FacturaEmisionError(422, "PREVIEW_VALIDATION_ERROR", "La factura no supera las validaciones de preview.");
+    throw new FacturaEmisionError(
+      422,
+      "PREVIEW_VALIDATION_ERROR",
+      "La factura no supera las validaciones de preview.",
+      previewInicial.validaciones
+    );
   }
 
   const { ticket } = await getWsaaLoginTicket(config, "wsfe");
