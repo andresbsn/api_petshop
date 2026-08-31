@@ -75,6 +75,16 @@ Configuracion validada para produccion:
 AFIP_PTO_VTA=4
 ```
 
+Para emitir en produccion deben estar configuradas ambas banderas:
+
+```env
+AFIP_PRODUCTION=true
+ARCA_EMISION_HABILITADA=true
+ARCA_PERMITIR_PRODUCCION=true
+```
+
+Antes de habilitar `ARCA_PERMITIR_PRODUCCION=true`, probar conexion y estado fiscal con certificado productivo.
+
 Para consultar ultimo autorizado de Factura B:
 
 ```env

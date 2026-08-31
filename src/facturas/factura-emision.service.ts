@@ -116,15 +116,19 @@ export async function emitirFacturaHomologacion(payload: FacturaRequest) {
 
   const config = loadArcaConfig();
 
-  if (config.production) {
-    throw new FacturaEmisionError(403, "PRODUCTION_EMISSION_BLOCKED", "Este endpoint solo permite emitir en homologacion.");
+  if (config.production && process.env.ARCA_PERMITIR_PRODUCCION !== "true") {
+    throw new FacturaEmisionError(
+      403,
+      "PRODUCTION_EMISSION_BLOCKED",
+      "La emision en produccion requiere ARCA_PERMITIR_PRODUCCION=true."
+    );
   }
 
   const idempotencyKey = buildIdempotencyKey(payload);
   const facturaExistente = await findFacturaByKey(idempotencyKey);
 
   if (facturaExistente) {
-    if (facturaExistente.estado !== "AUTORIZADA_HOMOLOGACION") {
+    if (!facturaExistente.estado.startsWith("AUTORIZADA_")) {
       throw new FacturaEmisionError(409, "FACTURA_ALREADY_REGISTERED", "La venta ya existe en la API pero no como factura autorizada de homologacion.");
     }
 
@@ -282,7 +286,7 @@ export async function emitirFacturaHomologacion(payload: FacturaRequest) {
           origen: payload.origen,
           idVenta: String(payload.idVenta),
           fecha: preview.normalizado.fecha,
-          estado: "AUTORIZADA_HOMOLOGACION",
+          estado: config.production ? "AUTORIZADA_PRODUCCION" : "AUTORIZADA_HOMOLOGACION",
           idempotencyKey,
           codigoTipoComprobante: payload.comprobante.codigoTipoComprobante,
           tipoComprobante: responseJson.comprobante.tipo,
@@ -340,7 +344,7 @@ export async function emitirFacturaHomologacion(payload: FacturaRequest) {
   } catch (error) {
     const existing = await findFacturaByKey(idempotencyKey);
 
-    if (existing && existing.estado === "AUTORIZADA_HOMOLOGACION") {
+    if (existing && existing.estado.startsWith("AUTORIZADA_")) {
       return {
         statusCode: 200,
         body: {

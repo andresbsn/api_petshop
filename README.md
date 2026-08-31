@@ -81,7 +81,15 @@ ARCA_EMISION_HABILITADA=true
 AFIP_PRODUCTION=false
 ```
 
-No permite emision si `AFIP_PRODUCTION=true`.
+Para emitir en produccion requiere una confirmacion adicional:
+
+```env
+ARCA_EMISION_HABILITADA=true
+AFIP_PRODUCTION=true
+ARCA_PERMITIR_PRODUCCION=true
+```
+
+Si `AFIP_PRODUCTION=true` y falta `ARCA_PERMITIR_PRODUCCION=true`, la API bloquea la emision.
 
 La respuesta de emision incluye un bloque `clarion` con campos planos para guardar en `Comprobantes`:
 
