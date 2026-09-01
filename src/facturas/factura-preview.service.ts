@@ -80,6 +80,8 @@ export function crearPreviewFactura(payload: FacturaRequest, options?: { numeroC
   const fecha = normalizeFecha(payload.fecha, advertencias);
   const puntoVenta = payload.comprobante.puntoVenta ?? Number(process.env.AFIP_PTO_VTA ?? 0);
   const condicionIvaReceptorId = getCondicionIvaReceptorId(payload);
+  const descuento = round2(payload.venta.descuento);
+  const recargo = round2(payload.venta.recargo);
 
   if (!puntoVenta) {
     errores.push({
@@ -102,7 +104,7 @@ export function crearPreviewFactura(payload: FacturaRequest, options?: { numeroC
     });
   }
 
-  const items = payload.items.map((item, index) => {
+  const itemsSinAjuste = payload.items.map((item, index) => {
     const alicuotaIva = normalizeAlicuota(item.alicuotaIva);
     const ivaAfipCode = getIvaAfipCode(alicuotaIva);
     const importeTotal = round2(item.importeTotal);
@@ -141,17 +143,41 @@ export function crearPreviewFactura(payload: FacturaRequest, options?: { numeroC
       precioUnitarioNeto,
       alicuotaIva,
       codigoAlicuotaAfip: ivaAfipCode,
+      importeTotalOriginal: importeTotal,
       importeNeto,
       importeIva,
       importeTotal
     };
   });
 
-  const totalItems = round2(items.reduce((sum, item) => sum + item.importeTotal, 0));
+  const totalItems = round2(itemsSinAjuste.reduce((sum, item) => sum + item.importeTotal, 0));
+  const totalEsperado = round2(totalItems - descuento + recargo);
+  const importeTotal = round2(payload.venta.total);
+  const factorAjuste = totalItems > 0 ? importeTotal / totalItems : 1;
+  let totalAjustadoAcumulado = 0;
+  const items = itemsSinAjuste.map((item, index) => {
+    const importeTotalAjustado = index === itemsSinAjuste.length - 1
+      ? round2(importeTotal - totalAjustadoAcumulado)
+      : round2(item.importeTotal * factorAjuste);
+
+    totalAjustadoAcumulado = round2(totalAjustadoAcumulado + importeTotalAjustado);
+
+    const importeNeto = round2(importeTotalAjustado / (1 + item.alicuotaIva / 100));
+    const importeIva = round2(importeTotalAjustado - importeNeto);
+
+    return {
+      ...item,
+      precioUnitarioConIva: round2(item.precioUnitarioConIva * factorAjuste),
+      precioUnitarioNeto: round2((item.precioUnitarioConIva * factorAjuste) / (1 + item.alicuotaIva / 100)),
+      importeNeto,
+      importeIva,
+      importeTotal: importeTotalAjustado
+    };
+  });
+
   const importeNeto = round2(items.reduce((sum, item) => sum + item.importeNeto, 0));
   const importeIva = round2(items.reduce((sum, item) => sum + item.importeIva, 0));
-  const importeTotal = round2(payload.venta.total);
-  const diferenciaTotal = round2(totalItems - importeTotal);
+  const diferenciaTotal = round2(totalEsperado - importeTotal);
 
   if (importeTotal <= 0) {
     errores.push({
@@ -163,7 +189,14 @@ export function crearPreviewFactura(payload: FacturaRequest, options?: { numeroC
   if (Math.abs(diferenciaTotal) > 0.01) {
     errores.push({
       path: "venta.total",
-      message: `La suma de items (${totalItems}) no coincide con venta.total (${importeTotal}).`
+      message: `La suma de items (${totalItems}) menos descuento (${descuento}) mas recargo (${recargo}) no coincide con venta.total (${importeTotal}).`
+    });
+  }
+
+  if ((descuento > 0 || recargo > 0) && Math.abs(diferenciaTotal) <= 0.01) {
+    advertencias.push({
+      path: "venta.total",
+      message: "Se distribuyo el descuento/recargo global proporcionalmente entre los items para calcular importes fiscales."
     });
   }
 
@@ -213,7 +246,10 @@ export function crearPreviewFactura(payload: FacturaRequest, options?: { numeroC
         importeNeto,
         importeIva,
         importeTotal,
-        sumaItems: totalItems
+        sumaItems: totalItems,
+        descuento,
+        recargo,
+        totalEsperado
       },
       items
     },

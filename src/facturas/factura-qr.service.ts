@@ -46,7 +46,7 @@ export async function generarQrFacturaPng(params: {
     }
   });
 
-  if (!factura || factura.estado !== "AUTORIZADA_HOMOLOGACION") {
+  if (!factura || !["AUTORIZADA_HOMOLOGACION", "AUTORIZADA_PRODUCCION"].includes(factura.estado)) {
     return undefined;
   }
 
