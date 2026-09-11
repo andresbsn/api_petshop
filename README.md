@@ -69,6 +69,7 @@ POST /api/v1/facturas
 POST /api/v1/facturas/preview
 POST /api/v1/facturas/emitir
 GET /api/v1/facturas/:origen/:idVenta?empresa=PETSHOP
+GET /api/v1/facturas?empresa=PETSHOP&limit=100&offset=0
 GET /api/v1/facturas/:origen/:idVenta/qr.png?empresa=PETSHOP
 ```
 
@@ -159,6 +160,8 @@ O incluirla dentro del JSON:
 Preferencia de seguridad: usar header `x-api-key`. Las alternativas son para compatibilidad con Clarion/ClaRunExt.
 
 `GET /health` no requiere API Key.
+
+`GET /api/v1/facturas` lista facturas autorizadas (`AUTORIZADA_*`) y devuelve todos los datos almacenados: empresa, comprobante, importes, payload original, respuesta, items y comunicaciones ARCA. Acepta los filtros `empresa`, `origen`, `estado`, `fechaDesde` y `fechaHasta` (formato `YYYY-MM-DD`), además de `limit` (1 a 100) y `offset`.
 
 ## Ejemplo de factura simulada
 

@@ -82,6 +82,48 @@ export async function buscarFacturaPorVenta(params: {
   return factura?.responseJson as FacturaResponse | undefined;
 }
 
+export async function listarFacturas(params: {
+  empresa?: string;
+  origen?: string;
+  estado?: string;
+  fechaDesde?: string;
+  fechaHasta?: string;
+  limit: number;
+  offset: number;
+}) {
+  const where: Prisma.FacturaWhereInput = {
+    estado: params.estado ? params.estado : { startsWith: "AUTORIZADA_" },
+    ...(params.origen ? { origen: params.origen } : {}),
+    ...(params.fechaDesde || params.fechaHasta
+      ? {
+          fecha: {
+            ...(params.fechaDesde ? { gte: params.fechaDesde } : {}),
+            ...(params.fechaHasta ? { lte: params.fechaHasta } : {})
+          }
+        }
+      : {}),
+    ...(params.empresa ? { empresa: { codigo: params.empresa } } : {})
+  };
+
+  const [total, facturas] = await prisma.$transaction([
+    prisma.factura.count({ where }),
+    prisma.factura.findMany({
+      where,
+      include: {
+        empresa: true,
+        items: { orderBy: { renglon: "asc" } },
+        arcaRequests: { orderBy: { createdAt: "asc" } },
+        arcaResponses: { orderBy: { createdAt: "asc" } }
+      },
+      orderBy: [{ fecha: "asc" }, { numeroComprobante: "asc" }, { id: "asc" }],
+      skip: params.offset,
+      take: params.limit
+    })
+  ]);
+
+  return { total, limit: params.limit, offset: params.offset, facturas };
+}
+
 export async function crearFacturaSimulada(payload: FacturaRequest) {
   const idempotencyKey = buildIdempotencyKey(payload);
   const comprobanteExistente = await findFacturaResponseByKey(idempotencyKey);

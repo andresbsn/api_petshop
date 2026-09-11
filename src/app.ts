@@ -3,6 +3,7 @@ import { facturaRequestSchema, formatValidationError } from "./facturas/factura.
 import {
   buscarFacturaPorVenta,
   crearFacturaSimulada,
+  listarFacturas,
   FacturaServiceError
 } from "./facturas/factura.service";
 import { crearPreviewFactura } from "./facturas/factura-preview.service";
@@ -37,6 +38,19 @@ function parseRequestBody(body: unknown) {
   }
 }
 
+function parseNonNegativeInteger(value: unknown, fallback: number) {
+  if (value === undefined) {
+    return fallback;
+  }
+
+  if (typeof value !== "string" || !/^\d+$/.test(value)) {
+    return undefined;
+  }
+
+  const parsed = Number(value);
+  return Number.isSafeInteger(parsed) ? parsed : undefined;
+}
+
 export function createApp() {
   const app = express();
 
@@ -48,6 +62,41 @@ export function createApp() {
   });
 
   app.use("/api/v1", requireApiKey);
+
+  app.get("/api/v1/facturas", async (req: Request, res: Response) => {
+    const limit = parseNonNegativeInteger(req.query.limit, 100);
+    const offset = parseNonNegativeInteger(req.query.offset, 0);
+
+    if (limit === undefined || limit < 1 || limit > 100 || offset === undefined) {
+      return res.status(400).json({
+        success: false,
+        error: "INVALID_PAGINATION",
+        message: "limit debe estar entre 1 y 100, y offset debe ser un entero no negativo."
+      });
+    }
+
+    const stringQuery = (name: string) =>
+      typeof req.query[name] === "string" && req.query[name] !== ""
+        ? req.query[name] as string
+        : undefined;
+
+    try {
+      const result = await listarFacturas({
+        empresa: stringQuery("empresa"),
+        origen: stringQuery("origen"),
+        estado: stringQuery("estado"),
+        fechaDesde: stringQuery("fechaDesde"),
+        fechaHasta: stringQuery("fechaHasta"),
+        limit,
+        offset
+      });
+
+      return res.json({ success: true, ...result });
+    } catch (error) {
+      console.error("Error en GET /api/v1/facturas", error);
+      return res.status(500).json({ success: false, error: "INTERNAL_ERROR" });
+    }
+  });
 
   app.get("/api/v1/facturas/:origen/:idVenta", async (req: Request, res: Response) => {
     const empresa = typeof req.query.empresa === "string" ? req.query.empresa : "PETSHOP";
